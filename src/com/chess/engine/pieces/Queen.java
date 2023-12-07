@@ -17,7 +17,7 @@ import static com.chess.engine.board.Move.*;
 public class Queen extends Piece {
     public final static int[] CANDIDATE_MOVE_COORDINATES = {-9,-8,-7,-1,1,7,8,9};
     public Queen( Alliance pieceAlliance, int piecePosition) {
-        super(piecePosition,PieceType.QUEEN, pieceAlliance);
+        super(piecePosition,PieceType.QUEEN, pieceAlliance,true);
     }
 
     @Override

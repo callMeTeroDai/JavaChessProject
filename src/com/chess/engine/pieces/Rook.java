@@ -18,7 +18,7 @@ public class Rook extends Piece {
 
     private final static int[] CANDIDATE_MOVE_COORDINATES = {-8,-1,1,8};
     public Rook(Alliance pieceAlliance,int piecePosition) {
-        super(piecePosition,PieceType.ROOK, pieceAlliance);
+        super(piecePosition,PieceType.ROOK, pieceAlliance,true);
     }
 
     @Override

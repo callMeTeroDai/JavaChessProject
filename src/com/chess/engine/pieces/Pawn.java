@@ -15,10 +15,10 @@ import static com.chess.engine.board.Move.*;
 
 public class Pawn extends Piece {
 
-    public final static int[]  CANDIDATE_MOVE_COORDINATE = {8};
+    public final static int[]  CANDIDATE_MOVE_COORDINATE = {8,16,7,9};
 
     public Pawn(final Alliance pieceAlliance,final int piecePosition) {
-        super(piecePosition,PieceType.PAWN, pieceAlliance);
+        super(piecePosition,PieceType.PAWN, pieceAlliance,true);
     }
 
     @Override
@@ -32,13 +32,14 @@ public class Pawn extends Piece {
             }
             if (currentCandidateOffSet == 8 && !board.getTile(candidateDestinationCoordinate).isTileOccupied()) {
                 legalMoves.add(new MajorMove(board, this, candidateDestinationCoordinate));
-            } else if (currentCandidateOffSet == 16 && this.isFirstMove() && (BoardUtils.SECOND_ROW[this.piecePosition]
+            }
+            else if (currentCandidateOffSet == 16 && this.isFirstMove() && ((BoardUtils.SEVENTH_RANK[this.piecePosition]
                     && this.getPieceAlliance().isBlack()) ||
-                    (BoardUtils.SEVENTH_ROW[this.piecePosition] && this.getPieceAlliance().isWhite())) {
+                    (BoardUtils.SECOND_RANK[this.piecePosition] && this.getPieceAlliance().isWhite()))) {
                 final int behindCandidateDestinationCoordinate = this.piecePosition + (this.pieceAlliance.getDirection() * 8);
                 if (!board.getTile(behindCandidateDestinationCoordinate).isTileOccupied()
                         && !board.getTile(candidateDestinationCoordinate).isTileOccupied()) {
-                    legalMoves.add(new MajorMove(board, this, candidateDestinationCoordinate));
+                    legalMoves.add(new PawnJump(board, this, candidateDestinationCoordinate));
                 } else if (currentCandidateOffSet == 7 && !(BoardUtils.EIGHTH_COLUMN[this.piecePosition] && this.pieceAlliance.isWhite()) ||
                         !(BoardUtils.FIRST_COLUMN[this.piecePosition] && this.pieceAlliance.isBlack())) {
                     if (board.getTile(candidateDestinationCoordinate).isTileOccupied()) {
