@@ -21,6 +21,9 @@ public class Pawn extends Piece {
         super(piecePosition,PieceType.PAWN, pieceAlliance,true);
     }
 
+    public Pawn(final Alliance pieceAlliance,final int piecePosition,final boolean isFirstMove) {
+        super(piecePosition, PieceType.PAWN, pieceAlliance, isFirstMove);
+    }
     @Override
     public Collection<Move> calculateLegalMoves(Board board) {
         List<Move> legalMoves = new ArrayList<>();
@@ -45,7 +48,7 @@ public class Pawn extends Piece {
                     if (board.getTile(candidateDestinationCoordinate).isTileOccupied()) {
                         final Piece pieceOnCandidate = board.getTile(candidateDestinationCoordinate).getPiece();
                         if (this.pieceAlliance != pieceOnCandidate.getPieceAlliance()) {
-                            legalMoves.add(new MajorMove(board, this, candidateDestinationCoordinate));
+                            legalMoves.add(new PawnAttackMove(board, this, candidateDestinationCoordinate,pieceOnCandidate));
                         }
                     }
                 } else if (currentCandidateOffSet == 9 && !(BoardUtils.FIRST_COLUMN[this.piecePosition] && this.pieceAlliance.isWhite()) ||
@@ -53,7 +56,7 @@ public class Pawn extends Piece {
                     if (board.getTile(candidateDestinationCoordinate).isTileOccupied()) {
                         final Piece pieceOnCandidate = board.getTile(candidateDestinationCoordinate).getPiece();
                         if (this.pieceAlliance != pieceOnCandidate.getPieceAlliance()) {
-                            legalMoves.add(new MajorMove(board, this, candidateDestinationCoordinate));
+                            legalMoves.add(new PawnAttackMove(board, this, candidateDestinationCoordinate, pieceOnCandidate));
                         }
                     }
                 }

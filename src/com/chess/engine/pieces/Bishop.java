@@ -20,6 +20,10 @@ public class Bishop extends Piece {
     public Bishop(Alliance pieceAlliance, int piecePosition) {
         super( piecePosition,PieceType.BISHOP, pieceAlliance,true);
     }
+    public Bishop(final Alliance pieceAlliance, final int piecePosition, final boolean isFirstMove) {
+        super( piecePosition,PieceType.BISHOP, pieceAlliance,isFirstMove);
+    }
+
 
     @Override
     public Collection<Move> calculateLegalMoves(final Board board) {

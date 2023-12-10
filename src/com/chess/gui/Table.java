@@ -6,6 +6,7 @@ import com.chess.engine.board.Move;
 import com.chess.engine.board.Tile;
 import com.chess.engine.pieces.Piece;
 import com.chess.engine.player.MoveTransition;
+import com.google.common.collect.Lists;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -33,6 +34,11 @@ public class Table {
     private Tile sourceTile;
     private Tile destinationTile;
     private Piece humanMovedPiece;
+    private BoardDirection boardDirection;
+    private boolean highlightLegalMoves;
+    private final TakenPiecesPanel takenPiecesPanel;
+    private final GameHistoryPanel gameHistoryPanel;
+    private final MoveLog moveLog;
 
     private final static Dimension OUTER_FRAME_DIMENSION =  new Dimension(600,600);
     private final static Dimension BOARD_PANEL_DIMENSION = new Dimension(400,350);
@@ -45,18 +51,26 @@ public class Table {
     public Table(){
         this.gameFrame = new JFrame("JChess");
         this.gameFrame.setLayout(new BorderLayout());
-        final JMenuBar tableMenuBar = populateMenuBar();
+        final JMenuBar tableMenuBar = createTableMenuBar();
         this.gameFrame.setJMenuBar(tableMenuBar);
-        this.chessBoard = Board.createStandardBoard();
-        this.boardPanel = new BoardPanel();
-        this.gameFrame.add(this.boardPanel, BorderLayout.CENTER);
         this.gameFrame.setSize(OUTER_FRAME_DIMENSION);
+        this.chessBoard = Board.createStandardBoard();
+        this.gameHistoryPanel = new GameHistoryPanel();
+        this.takenPiecesPanel = new TakenPiecesPanel();
+        this.boardPanel = new BoardPanel();
+        this.moveLog = new MoveLog();
+        this.boardDirection = BoardDirection.NORMAL;
+        this.highlightLegalMoves = false;
+        this.gameFrame.add(this.takenPiecesPanel,BorderLayout.WEST);
+        this.gameFrame.add(this.gameHistoryPanel,BorderLayout.EAST);
+        this.gameFrame.add(this.boardPanel, BorderLayout.CENTER);
         this.gameFrame.setVisible(true);
     }
 
-    private JMenuBar populateMenuBar() {
+    private JMenuBar createTableMenuBar() {
         final JMenuBar tableMenuBar = new JMenuBar();
         tableMenuBar.add(createFileMenu());
+        tableMenuBar.add((createPrefencesMenu()));
         return tableMenuBar;
     }
 
@@ -83,6 +97,56 @@ public class Table {
         return fileMenu;
     }
 
+    private JMenu createPrefencesMenu(){
+        final JMenu preferencesMenu = new JMenu("Preferences");
+        final JMenuItem flipBoard = new JMenuItem("Flip Board");
+        flipBoard.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                boardDirection = boardDirection.opposite();
+                boardPanel.drawBoard(chessBoard);
+            }
+        });
+        preferencesMenu.add(flipBoard);
+        preferencesMenu.addSeparator();
+        final JCheckBoxMenuItem legalMovesHighlighterCheckBox = new JCheckBoxMenuItem("Highlight Legal Moves",false);
+        legalMovesHighlighterCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                highlightLegalMoves = legalMovesHighlighterCheckBox.isSelected();
+            }
+        });
+        preferencesMenu.add(legalMovesHighlighterCheckBox);
+        return preferencesMenu;
+    }
+
+    private enum BoardDirection{
+        NORMAL{
+            @Override
+            List<TilePanel> traverse(List<TilePanel> boardTiles) {
+                return boardTiles;
+            }
+
+            @Override
+            BoardDirection opposite() {
+                return FLIPPED;
+            }
+        },
+        FLIPPED{
+            @Override
+            List<TilePanel> traverse(List<TilePanel> boardTiles) {
+                return Lists.reverse(boardTiles);
+            }
+
+            @Override
+            BoardDirection opposite() {
+                return NORMAL;
+            }
+        };
+        abstract List<TilePanel> traverse(final List<TilePanel> boardTiles);
+        abstract BoardDirection opposite();
+    }
+
     private class BoardPanel extends JPanel{
         final List<TilePanel> boardTiles;
         BoardPanel() {
@@ -100,15 +164,38 @@ public class Table {
 
         public void drawBoard(final Board board){
             removeAll();
-            for(final TilePanel tilePanel : boardTiles){
+            for(final TilePanel tilePanel : boardDirection.traverse(boardTiles)){
                 tilePanel.drawTile(board);
                 add(tilePanel);
             }
             validate();
             repaint();
         }
+    }
+    public static class MoveLog{
+        private final List<Move> moves;
 
-
+        MoveLog(){
+            this.moves = new ArrayList<>();
+        }
+        public List<Move> getMoves(){
+            return this.moves;
+        }
+        public void addMove(final Move move){
+            this.moves.add(move);
+        }
+        public int size(){
+            return this.moves.size();
+        }
+        public void clear(){
+            this.moves.clear();
+        }
+        public Move removeMove(int index){
+            return this.moves.remove(index);
+        }
+        public boolean removeMove(final Move move){
+            return this.moves.remove(move);
+        }
     }
     private class TilePanel extends JPanel{
         private final int tileId;
@@ -143,6 +230,7 @@ public class Table {
                         final MoveTransition transition = chessBoard.currentPlayer().makeMove(move);
                         if(transition.getMoveStatus().isDone()){
                             chessBoard = transition.getTransitionBoard();
+                            moveLog.addMove(move);
                         }
                         sourceTile = null;
                         destinationTile = null;
@@ -151,6 +239,8 @@ public class Table {
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
                         public void run() {
+                            gameHistoryPanel.redo(chessBoard,moveLog);
+                            takenPiecesPanel.redo(moveLog);
                             boardPanel.drawBoard(chessBoard);
                         }
                     });
@@ -186,6 +276,7 @@ public class Table {
         public  void drawTile(final Board board){
             assignTileColor();
             assignTilePieceIcon(board);
+            highlightLegals(board);
             validate();
             repaint();
 
@@ -207,6 +298,27 @@ public class Table {
             }
         }
 
+        private void highlightLegals(final Board board){
+            if(highlightLegalMoves){
+                for(final Move move : pieceLegalMoves(board)){
+                    if(move.getDestinationCoordinate() == this.tileId){
+                        try{
+                            add(new JLabel(new ImageIcon(ImageIO.read(new File("misc/green_dot.png")))));
+                        }
+                        catch(Exception e){
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+        private Collection<Move> pieceLegalMoves (final Board board){
+            if(humanMovedPiece != null && humanMovedPiece.getPieceAlliance() == board.currentPlayer().getAlliance()){
+                return humanMovedPiece.calculateLegalMoves(board);
+            }
+            return Collections.emptyList();
+        }
+
         private void assignTileColor() {
 
             if(BoardUtils.EIGHTH_RANK[this.tileId] ||
@@ -225,6 +337,5 @@ public class Table {
         }
 
     }
-
 
 }
