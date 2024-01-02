@@ -83,6 +83,7 @@ public abstract class Player {
     public boolean isCastled(){
         return false;
     }
+
     public MoveTransition makeMove(final Move move){
         if(!isMoveLegal(move)){
             return new MoveTransition(this.board,move,MoveStatus.ILLEGAL_MOVE);

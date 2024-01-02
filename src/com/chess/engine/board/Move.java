@@ -10,7 +10,8 @@ import static com.chess.engine.board.Board.*;
 public abstract class Move {
     final Board board;
     final Piece movedPiece;
-    final int destinationCoordinate;protected final boolean isFirstMove;
+    final int destinationCoordinate;
+    protected final boolean isFirstMove;
 
     public static final Move NULL_MOVE = new NullMove();
 
@@ -18,8 +19,9 @@ public abstract class Move {
                 final Piece movedPiece,
                 final int destinationCoordinate){
         this.board = board;
-        this.movedPiece = movedPiece;
+
         this.destinationCoordinate = destinationCoordinate;
+        this.movedPiece = movedPiece;
         this.isFirstMove = movedPiece.isFirstMove();
     }
     private Move(final Board board,
@@ -52,6 +54,9 @@ public abstract class Move {
         return getCurrentCoordinate() == otherMove.getCurrentCoordinate() &&
                 getDestinationCoordinate()== otherMove.getDestinationCoordinate() &&
         getMovedPiece().equals(otherMove.getMovedPiece());
+    }
+    public Board getBoard(){
+        return this.board;
     }
     public Piece getMovedPiece(){
         return this.movedPiece;
@@ -157,6 +162,14 @@ public abstract class Move {
             final AttackMove otherAttackMove = (AttackMove) other;
             return super.equals(otherAttackMove) && getAttackedPiece().equals(otherAttackMove.getAttackedPiece());
         }
+        @Override
+        public Piece getAttackedPiece(){
+            return this.attackedPiece;
+        }
+        @Override
+        public boolean isAttack(){
+            return true;
+        }
     }
 
     public static final class PawnMove extends Move{
@@ -226,6 +239,53 @@ public abstract class Move {
             return builder.build();
         }
 
+    }
+    public static class PawnPromotion extends Move{
+        final Move decoratedMove;
+        final Pawn promotedPawn;
+        public PawnPromotion(final Move decoratedMove) {
+            super(decoratedMove.getBoard(),decoratedMove.getMovedPiece(),decoratedMove.getDestinationCoordinate());
+            this.decoratedMove = decoratedMove;
+            this.promotedPawn = (Pawn) decoratedMove.getMovedPiece();
+        }
+
+        @Override
+        public int hashCode(){
+            return decoratedMove.hashCode() + (31 * promotedPawn.hashCode());
+        }
+        @Override
+        public boolean equals(final Object other){
+            return this == other || other instanceof PawnPromotion && (super.equals(other));
+        }
+        @Override
+        public Board execute(){
+            final Board pawnMovedBoard = this.decoratedMove.execute();
+            final Board.Builder builder = new Builder();
+            for(final Piece piece : pawnMovedBoard.currentPlayer().getActivePieces()){
+                if(!this.promotedPawn.equals(piece)) {
+                    builder.setPiece(piece);
+                }
+            }
+            for(final Piece piece : pawnMovedBoard.currentPlayer().getOpponent().getActivePieces()){
+                builder.setPiece(piece);
+            }
+            builder.setPiece(this.promotedPawn.getPromotionPiece().movePiece(this));
+            builder.setMoveMaker(pawnMovedBoard.currentPlayer().getAlliance());
+            return builder.build();
+
+        }
+        @Override
+        public boolean isAttack(){
+            return this.decoratedMove.isAttack();
+        }
+        @Override
+        public Piece getAttackedPiece(){
+            return this.decoratedMove.getAttackedPiece();
+        }
+        @Override
+        public String toString(){
+            return "";
+        }
     }
 
     public static final class PawnJump extends Move{
